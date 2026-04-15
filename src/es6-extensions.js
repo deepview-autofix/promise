@@ -71,7 +71,7 @@ Promise.all = function (arr) {
             val = val._value;
           }
           if (val._state === 1) return res(i, val._value);
-          if (val._state === 2) reject(val._value);
+          if (val._state === 2) return reject(val._value);
           val.then(function (val) {
             res(i, val);
           }, reject);

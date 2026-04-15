@@ -525,6 +525,31 @@ describe('extensions', function () {
           .nodeify(done)
         })
       })
+      describe('containing an already-rejected promise', function () {
+        it('does not attach a .then handler to the rejected promise', function (done) {
+          var rejectedPromise = new Promise(function (resolve, reject) { reject(rejection) })
+          var origThen = Promise.prototype.then
+          var thenCallsOnRejected = 0
+
+          Promise.prototype.then = function () {
+            if (this === rejectedPromise) thenCallsOnRejected++
+            return origThen.apply(this, arguments)
+          }
+
+          var result = Promise.all([A, rejectedPromise])
+          Promise.prototype.then = origThen
+
+          result.then(
+            function () {
+              throw new Error('Should be rejected')
+            },
+            function (err) {
+              assert(err === rejection)
+              assert(thenCallsOnRejected === 0)
+            }
+          ).nodeify(done)
+        })
+      })
       describe('containing at least one eventually rejected promise', function () {
         it('rejects the resulting promise', function (done) {
           var rejectB
