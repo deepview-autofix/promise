@@ -158,7 +158,8 @@ Promise.any = function promiseAny(values) {
   return new Promise(function(resolve, reject) {
     var promises = iterableToArray(values);
     var hasResolved = false;
-    var rejectionReasons = [];
+    var rejectionReasons = new Array(promises.length);
+    var rejectionCount = 0;
 
     function resolveOnce(value) {
       if (!hasResolved) {
@@ -167,10 +168,11 @@ Promise.any = function promiseAny(values) {
       }
     }
 
-    function rejectionCheck(reason) {
-      rejectionReasons.push(reason);
+    function rejectionCheck(i, reason) {
+      rejectionReasons[i] = reason;
+      rejectionCount++;
 
-      if (rejectionReasons.length === promises.length) {
+      if (rejectionCount === promises.length) {
         reject(getAggregateError(rejectionReasons));
       }
     }
@@ -178,8 +180,10 @@ Promise.any = function promiseAny(values) {
     if(promises.length === 0){
       reject(getAggregateError(rejectionReasons));
     } else {
-      promises.forEach(function(value){
-        Promise.resolve(value).then(resolveOnce, rejectionCheck);
+      promises.forEach(function(value, i){
+        Promise.resolve(value).then(resolveOnce, function(reason) {
+          rejectionCheck(i, reason);
+        });
       });
     }
   });

@@ -198,6 +198,27 @@ describe('extensions', function () {
           }).nodeify(done);
         });
       });
+      describe('containing all rejected promises rejecting out of order', function () {
+        it('orders errors by input index, not completion order', function (done) {
+          var rejectFirst, rejectSecond, rejectThird;
+          var p0 = new Promise(function (resolve, reject) { rejectFirst = reject; });
+          var p1 = new Promise(function (resolve, reject) { rejectSecond = reject; });
+          var p2 = new Promise(function (resolve, reject) { rejectThird = reject; });
+          var e0 = { order: 0 };
+          var e1 = { order: 1 };
+          var e2 = { order: 2 };
+          var res = Promise.any([p0, p1, p2]);
+          // reject in reverse order: p2 first, then p1, then p0
+          rejectThird(e2);
+          rejectSecond(e1);
+          rejectFirst(e0);
+          res.catch(function (err) {
+            assert(err.errors[0] === e0);
+            assert(err.errors[1] === e1);
+            assert(err.errors[2] === e2);
+          }).nodeify(done);
+        });
+      });
     })
   })
   describe('Promise.allSettled(...)', function () {
